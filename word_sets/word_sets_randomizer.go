@@ -5,7 +5,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"log"
-	"rand"
+	"math/rand"
 	"time"
 )
 
@@ -15,8 +15,8 @@ const (
 	EnPop200 WordSet = "English200Popular"
 )
 
-var availableWordSets = []WordSet{enPop200}
-var wordSetToFilename = map[WordSet]string{enPop200: "en-pop-200.json"}
+var availableWordSets = []WordSet{EnPop200}
+var wordSetToFilename = map[WordSet]string{EnPop200: "word_sets/en-pop-200.json"}
 
 type WordSetData struct {
 	name  string
@@ -26,7 +26,7 @@ type WordSetData struct {
 
 func ShuffleWordSet(set WordSet) ([]string, error) {
 	var setFilename string
-	if Contains[WordSet](availableWordSets, set) {
+	if Contains(availableWordSets, set) {
 		setFilename = wordSetToFilename[set]
 	}
 	if setFilename == "" {
