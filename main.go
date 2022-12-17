@@ -3,8 +3,10 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 	word_sets "turtle-typing/word_sets"
 
+	"github.com/charmbracelet/bubbles/timer"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/muesli/termenv"
 )
@@ -13,35 +15,53 @@ var (
 	_words, _ = word_sets.ShuffleWordSet(word_sets.EnPop200)
 )
 
+const (
+	timeout         = time.Second * 60
+	wordsWindowSize = word_sets.WordsPerLineLimit * 2
+	commonWordSize  = 5 // To calculate WPM
+)
+
 type model struct {
-	Words            []rune // words that appear on the screen
-	redHighlight     []int  // word indexes that are highlighted with red
-	greenHighlight   []int  // word indexes that are highlighted with green
-	keyStrokeCounter int    // how many keystorkes player made
-	Typed            []rune // words player has typed
-	Mistakes         int    // number of mistakes player made
-	Score            int    // player score
+	Words    []rune      // words that appear on the screen
+	Typed    []rune      // words player has typed
+	Mistakes int         // number of mistakes player made
+	Score    int         // player score
+	Timer    timer.Model // timer
+	Quit     bool        // should quit game
 }
 
 func initialModel() model {
 	return model{
-		Words:            _words,
-		redHighlight:     []int{},
-		greenHighlight:   []int{},
-		keyStrokeCounter: -1,
-		Typed:            []rune{},
-		Mistakes:         0,
-		Score:            0,
+		Words:    _words,
+		Typed:    []rune{},
+		Mistakes: 0,
+		Score:    0,
+		Timer:    timer.NewWithInterval(timeout, time.Second),
 	}
 }
 
 func (m model) Init() tea.Cmd {
-	// Just return `nil`, which means "no I/O right now, please."
-	return nil
+	return m.Timer.Init()
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case timer.TickMsg:
+		var cmd tea.Cmd
+		m.Timer, cmd = m.Timer.Update(msg)
+		return m, cmd
+
+	case timer.StartStopMsg:
+		var cmd tea.Cmd
+		m.Timer, cmd = m.Timer.Update(msg)
+		// m.keymap.stop.SetEnabled(m.timer.Running())
+		// m.keymap.start.SetEnabled(!m.timer.Running())
+		return m, cmd
+
+	case timer.TimeoutMsg:
+		m.Quit = true
+		return m, nil
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
@@ -73,6 +93,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		m.Typed = append(m.Typed, ch)
 
+		if len(m.Typed) == 1 {
+			m.Timer.Timeout = timeout
+			m.Timer.Toggle()
+		}
+
 		if ch == next {
 			m.Score += 1
 		} else {
@@ -86,9 +111,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	header := "Turtle Typing\t\t"
+	header := "🐢 Turtle Typing "
+	footer := "\nPress ctrl+c to quit.\n"
+
 	var typed string
-	remaining := m.Words[len(m.Typed):]
+	remaining := m.Words[len(m.Typed):][:wordsWindowSize]
 
 	for i, c := range m.Typed {
 		if c == m.Words[i] {
@@ -102,14 +129,36 @@ func (m model) View() string {
 		}
 	}
 
-	// The footer
-	footer := "\nPress ctrl+c to quit.\n"
+	timerView := m.Timer.View()
+
+	if m.Timer.Timedout() {
+		timerView = "Time's Up!"
+		WPM := m.Score / commonWordSize
+		errorRate := 0
+		if len(m.Typed) > 0 {
+			errorRate = m.Mistakes / len(m.Typed)
+		}
+
+		s := fmt.Sprintf(
+			"\n  %s\n\nWPM = %s, Error Rate = %s%%\n\n%s",
+			header,
+			fmt.Sprint(WPM),
+			fmt.Sprint(errorRate),
+			footer,
+		)
+		return s
+	}
+	timerView += "\n"
+	if !m.Quit {
+		timerView = "Remaining... " + timerView
+	}
 
 	s := fmt.Sprintf(
-		"\n  %s\n\n%s%s\n\nscore=%s,mistakes=%s\n\n%s",
+		"\n  %s\n\n%s%s\n\n%s\n\nscore=%s,mistakes=%s\n\n%s",
 		header,
 		typed,
 		string(remaining),
+		timerView,
 		fmt.Sprint(m.Score),
 		fmt.Sprint(m.Mistakes),
 		footer,
@@ -120,7 +169,6 @@ func (m model) View() string {
 }
 
 func main() {
-	fmt.Println(string(_words[:10]))
 	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)

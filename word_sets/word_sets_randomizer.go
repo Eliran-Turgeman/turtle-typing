@@ -13,7 +13,7 @@ type WordSet string
 
 const (
 	EnPop200          WordSet = "English200Popular"
-	wordsPerLineLimit         = 10
+	WordsPerLineLimit         = 15
 )
 
 var availableWordSets = []WordSet{EnPop200}
@@ -56,7 +56,7 @@ func ShuffleWordSet(set WordSet) ([]rune, error) {
 	for _, st := range words {
 		chars := []rune(st)
 		chars = append(chars, ' ')
-		if wordsInLine >= wordsPerLineLimit {
+		if wordsInLine >= WordsPerLineLimit {
 			chars = append(chars, '\n')
 			wordsInLine = 0
 		}
