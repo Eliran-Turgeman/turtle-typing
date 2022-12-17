@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
+	"turtle-typing/analytics"
 	word_sets "turtle-typing/word_sets"
 
 	"github.com/charmbracelet/bubbles/timer"
@@ -16,7 +18,7 @@ var (
 )
 
 const (
-	timeout         = time.Second * 60
+	timeout         = time.Second * 5
 	wordsWindowSize = word_sets.WordsPerLineLimit * 2
 	commonWordSize  = 5 // To calculate WPM
 )
@@ -134,6 +136,7 @@ func (m model) View() string {
 		if len(m.Typed) > 0 {
 			errorRate = m.Mistakes * 100 / len(m.Typed)
 		}
+		analytics.SaveGameData(WPM, errorRate)
 
 		s := fmt.Sprintf(
 			"\n  %s\n\nWPM = %s, Error Rate = %s%%\n\n%s",
@@ -142,6 +145,7 @@ func (m model) View() string {
 			fmt.Sprint(errorRate),
 			footer,
 		)
+
 		return s
 	}
 	timerView += "\n"
@@ -164,6 +168,17 @@ func (m model) View() string {
 }
 
 func main() {
+	if err := os.MkdirAll(filepath.Dir(analytics.GameDataFile), 0770); err != nil {
+		fmt.Printf("failed to create dir %s", err)
+	}
+
+	csvFile, err := os.Create(analytics.GameDataFile)
+
+	if err != nil {
+		fmt.Printf("failed creating file: %s", err)
+	}
+	csvFile.Close()
+
 	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
