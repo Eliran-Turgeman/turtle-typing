@@ -3,6 +3,7 @@ package words
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -19,9 +20,9 @@ var availableWordSets = []WordSet{EnPop200}
 var wordSetToFilename = map[WordSet]string{EnPop200: "word_sets/en-pop-200.json"}
 
 type WordSetData struct {
-	name  string
-	size  int
-	words []string
+	Name  string   `json:"name"`
+	Size  int      `json:"size"`
+	Words []string `json:"words"`
 }
 
 func ShuffleWordSet(set WordSet) ([]string, error) {
@@ -33,6 +34,7 @@ func ShuffleWordSet(set WordSet) ([]string, error) {
 		log.Fatal("Unknown wordset")
 		return nil, errors.New("Unknown wordset")
 	}
+	fmt.Println("filename= ", setFilename)
 	content, err := ioutil.ReadFile(setFilename)
 	if err != nil {
 		log.Fatal("Error when opening file: ", err)
@@ -46,7 +48,7 @@ func ShuffleWordSet(set WordSet) ([]string, error) {
 		return nil, err
 	}
 
-	var words []string = payload.words
+	var words []string = payload.Words
 	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(words), func(i, j int) { words[i], words[j] = words[j], words[i] })
 

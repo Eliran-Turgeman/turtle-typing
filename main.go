@@ -90,6 +90,7 @@ func (m model) View() string {
 
 func main() {
 	fmt.Println("HELLO")
+	fmt.Println(_words)
 	fmt.Println(wordsToDisplay)
 	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
