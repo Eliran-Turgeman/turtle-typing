@@ -3,7 +3,6 @@ package words
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -13,7 +12,8 @@ import (
 type WordSet string
 
 const (
-	EnPop200 WordSet = "English200Popular"
+	EnPop200          WordSet = "English200Popular"
+	wordsPerLineLimit         = 10
 )
 
 var availableWordSets = []WordSet{EnPop200}
@@ -25,7 +25,7 @@ type WordSetData struct {
 	Words []string `json:"words"`
 }
 
-func ShuffleWordSet(set WordSet) ([]string, error) {
+func ShuffleWordSet(set WordSet) ([]rune, error) {
 	var setFilename string
 	if Contains(availableWordSets, set) {
 		setFilename = wordSetToFilename[set]
@@ -34,7 +34,6 @@ func ShuffleWordSet(set WordSet) ([]string, error) {
 		log.Fatal("Unknown wordset")
 		return nil, errors.New("Unknown wordset")
 	}
-	fmt.Println("filename= ", setFilename)
 	content, err := ioutil.ReadFile(setFilename)
 	if err != nil {
 		log.Fatal("Error when opening file: ", err)
@@ -52,7 +51,19 @@ func ShuffleWordSet(set WordSet) ([]string, error) {
 	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(words), func(i, j int) { words[i], words[j] = words[j], words[i] })
 
-	return words, nil
+	var runes []rune
+	var wordsInLine = 0
+	for _, st := range words {
+		chars := []rune(st)
+		chars = append(chars, ' ')
+		if wordsInLine >= wordsPerLineLimit {
+			chars = append(chars, '\n')
+			wordsInLine = 0
+		}
+		runes = append(runes, chars...)
+		wordsInLine++
+	}
+	return runes, nil
 }
 
 func Contains[T comparable](s []T, e T) bool {
