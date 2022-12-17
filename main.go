@@ -16,7 +16,7 @@ var (
 )
 
 const (
-	timeout         = time.Second * 60
+	timeout         = time.Second * 5
 	wordsWindowSize = word_sets.WordsPerLineLimit * 2
 	commonWordSize  = 5 // To calculate WPM
 )
@@ -134,9 +134,9 @@ func (m model) View() string {
 	if m.Timer.Timedout() {
 		timerView = "Time's Up!"
 		WPM := m.Score / commonWordSize
-		errorRate := 0
+		var errorRate = 0
 		if len(m.Typed) > 0 {
-			errorRate = m.Mistakes / len(m.Typed)
+			errorRate = m.Mistakes * 100 / len(m.Typed)
 		}
 
 		s := fmt.Sprintf(
