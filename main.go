@@ -16,14 +16,14 @@ var (
 )
 
 const (
-	timeout         = time.Second * 5
+	timeout         = time.Second * 60
 	wordsWindowSize = word_sets.WordsPerLineLimit * 2
 	commonWordSize  = 5 // To calculate WPM
 )
 
 type model struct {
-	Words    []rune      // words that appear on the screen
-	Typed    []rune      // words player has typed
+	Words    []rune      // chars that appear on the screen
+	Typed    []rune      // chars player has typed
 	Mistakes int         // number of mistakes player made
 	Score    int         // player score
 	Timer    timer.Model // timer
@@ -54,8 +54,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case timer.StartStopMsg:
 		var cmd tea.Cmd
 		m.Timer, cmd = m.Timer.Update(msg)
-		// m.keymap.stop.SetEnabled(m.timer.Running())
-		// m.keymap.start.SetEnabled(!m.timer.Running())
 		return m, cmd
 
 	case timer.TimeoutMsg:
@@ -105,8 +103,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	// Return the updated model to the Bubble Tea runtime for processing.
-	// Note that we're not returning a command.
 	return m, nil
 }
 
@@ -164,7 +160,6 @@ func (m model) View() string {
 		footer,
 	)
 
-	// Send the UI for rendering
 	return s
 }
 
